@@ -27,7 +27,7 @@ util.seed_everything(seed)
 train_dl, test_dl = CreateDataLoader(opt)
 train_ds, test_ds = train_dl.dataset, test_dl.dataset
 
-if opt.dataset_mode == 'snet':
+if opt.dataset_mode in ['mka', 'snet']:
     assert len(list( set(train_ds.model_list) & set(test_ds.model_list) )) == 0, 'should not have duplicate data in train/test'
 elif opt.dataset_mode == 'pix3d':
     tr_model_list = [m for m in train_ds.sdf_list if 'chair' not in m]

@@ -29,7 +29,14 @@ def CreateDataset(opt):
 
     # decide resolution later at model
 
-    if opt.dataset_mode == 'mnist':
+    if opt.dataset_mode == 'mka':
+        from datasets.snet_dataset import MKADataset
+        train_dataset = MKADataset()
+        test_dataset = MKADataset()
+        train_dataset.initialize(opt, 'train', cat=opt.cat)
+        test_dataset.initialize(opt, 'test', cat=opt.cat)
+
+    elif opt.dataset_mode == 'mnist':
         trfs = transforms.Compose([transforms.ToTensor(),
                                    transforms.Normalize((0.5), (0.5))])
         train_dataset = datasets.MNIST(dataroot, download=True, transform=trfs, train=True)

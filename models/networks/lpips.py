@@ -7,7 +7,7 @@ from collections import namedtuple
 
 from utils.lpips_util import get_ckpt_path
 from configs.paths import dataroot
-
+import os
 class LPIPS(nn.Module):
     # Learned perceptual metric
     def __init__(self, use_dropout=True):
@@ -26,7 +26,8 @@ class LPIPS(nn.Module):
 
     def load_from_pretrained(self, name="vgg_lpips"):
         # ckpt = get_ckpt_path(name, "taming/modules/autoencoder/lpips")
-        coderoot = dataroot[:-4]
+        coderoot = dataroot
+        os.makedirs(f'{coderoot}/saved_ckpt/lpips',exist_ok=True)
         ckpt = get_ckpt_path(name, '%s/saved_ckpt/lpips' % (coderoot))
         self.load_state_dict(torch.load(ckpt, map_location=torch.device("cpu")), strict=False)
         print("loaded pretrained LPIPS loss from {}".format(ckpt))

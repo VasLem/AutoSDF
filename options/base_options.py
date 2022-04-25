@@ -45,7 +45,7 @@ class BaseOptions():
         self.parser.add_argument('--tf_cfg', type=str, default='configs/rand_tf_snet_code.yaml', help='tf model config file')
 
         # dataset stuff
-        self.parser.add_argument('--dataset_mode', type=str, default='snet', help='chooses how datasets are loaded. [mnist, snet, abc, snet-abc]')
+        self.parser.add_argument('--dataset_mode', type=str, default='snet', help='chooses how datasets are loaded. [mnist, snet, abc, snet-abc, mka]')
         self.parser.add_argument('--trunc_thres', type=float, default=0.2, help='threshold for truncated sdf. value will be: sdf=torch.clamp(sdf, -trunc_thres, trunc_thres)')
         self.parser.add_argument('--iou_thres', type=float, default=0.0, help='threshold for computing 3d iou.')
         self.parser.add_argument('--ratio', type=float, default=1., help='ratio of the dataset to use')
@@ -92,8 +92,11 @@ class BaseOptions():
         self.opt = self.parser.parse_args()
         self.opt.isTrain = self.isTrain   # train or test
 
-        # added by yc
-        self.opt.device = 'cuda'
+        if self.opt.gpu_ids == '-1':
+            self.opt.device = 'cpu'
+        else:
+            # added by yc
+            self.opt.device = 'cuda'
         
         if self.opt.model in ['vqvae', 'pvqvae']:
             configs = OmegaConf.load(self.opt.vq_cfg)

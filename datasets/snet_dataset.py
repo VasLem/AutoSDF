@@ -8,7 +8,7 @@ import h5py
 import numpy as np
 from PIL import Image
 from termcolor import colored, cprint
-
+import glob
 import torch
 import torch.nn.functional as F
 import torchvision.utils as vutils
@@ -29,6 +29,68 @@ def get_code_setting(opt):
     if opt.vq_note != 'default':
         code_setting = f'{code_setting}-{opt.vq_note}'
     return code_setting
+
+class MKADataset(BaseDataset):
+    def initialize(self, opt,  phase='train', cat='mandible'):
+        self.opt = opt
+        self.max_dataset_size = opt.max_dataset_size
+        self.info = {}
+        self.info['cats'] = ['mandible']
+        if cat != 'all':
+            self.info['cats'] = [cat]
+        self.model_list = []
+        self.cats_list = []
+        self.test_size = 4
+        for cat in self.info['cats']:
+            model_list_s = [] 
+            for path in glob.glob(os.path.join(dataroot,'dataset', cat, 'good','*.h5')):
+                model_list_s.append(path)
+            if phase=='train':
+                model_list_s = model_list_s[:-self.test_size]
+            else:
+                model_list_s = model_list_s[-self.test_size:]
+            self.model_list.extend(model_list_s)
+            self.cats_list.extend(len(model_list_s) * [cat])
+            print('[*] %d samples for %s.' % (len(model_list_s), cat))
+
+        np.random.default_rng(seed=0).shuffle(self.model_list)
+        np.random.default_rng(seed=0).shuffle(self.cats_list)
+
+        # cprint('[*] (SDFDataset) there are %d categories.' % (len(all_catids)), 'yellow')
+
+        # need to check the seed for reproducibility
+        self.model_list = self.model_list[:self.max_dataset_size]
+        cprint('[*] %d samples loaded.' % (len(self.model_list)), 'yellow')
+
+        self.N = len(self.model_list)
+
+        self.to_tensor = transforms.ToTensor()
+        self.normalize = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+
+    def __getitem__(self, index):
+
+        cat = self.cats_list[index]
+        sdf_h5_file = self.model_list[index]
+        h5_f = h5py.File(sdf_h5_file, 'r')
+        sdf = h5_f['pc_sdf_sample'][:].astype(np.float32)
+        sdf = torch.Tensor(sdf).view(1, 64, 64, 64)
+        thres = self.opt.trunc_thres
+        if thres != 0.0:
+            sdf = torch.clamp(sdf, min=-thres, max=thres)
+        ret = {
+            'sdf': sdf,
+            'cat_id': cat,
+            'cat_str': cat,
+            'path': sdf_h5_file,
+        }
+
+        return ret
+
+    def __len__(self):
+        return self.N
+
+    def name(self):
+        return 'MKA'
 
 # from https://github.com/laughtervv/DISN/blob/master/preprocessing/info.json
 class ShapeNetDataset(BaseDataset):
